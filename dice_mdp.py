@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from datetime import datetime
 
 class DiceStopEnv:
     def __init__(self, horizon=5):
@@ -131,7 +132,7 @@ def calculate_value_start(env, policy_params=None, pi=None):
 
 learning_rates = [0.1, 0.5, 1.0, 2.0]
 num_episodes = 100000
-n_runs = 1
+n_runs = 30
 
 horizon = 5
 env = DiceStopEnv(horizon=horizon)  # Replace with your actual class
@@ -207,10 +208,27 @@ for lr in learning_rates:
     results_by_lr[lr] = {
         "episodes": episodes,
         "avg_suboptimality": averaged_suboptimality,
-        "std_suboptimality": std_suboptimality
+        "std_suboptimality": std_suboptimality,
+        "all_runs_suboptimalities": all_runs_suboptimalities
     }
 
     print(f"Done with LR={lr}")
+
+episodes = np.arange(1, num_episodes + 1)
+for n in range(n_runs):
+    plt.figure(figsize=(10, 6))
+    for lr, data in results_by_lr.items():
+        plt.plot(episodes, data["all_runs_suboptimalities"][n, :], label=f"LR={lr}", linewidth=1.5)
+
+    plt.xlabel("Episode")
+    plt.ylabel(r"Suboptimality: $V^*_{0}(s_0) - V_{\theta_T}(s_0)$")
+    plt.title(f"Suboptimality with run {n} with {lr} learning rate")
+    plt.grid(True)
+    plt.yscale('log')
+    plt.legend(title="Learning Rate")
+    plt.tight_layout()
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    plt.savefig(f"suboptimality_dice_mdp_run_{n}_{timestamp}.png")
 
 
 plt.figure(figsize=(10, 6))
@@ -227,7 +245,9 @@ plt.xlabel("Episode")
 plt.ylabel(r"Suboptimality: $V^*(s_0, h=0) - V_{\theta}(s_0, h=0)$")
 plt.title("Suboptimality Gap vs Training Episodes")
 plt.legend()
-# plt.yscale("log")
+plt.yscale("log")
 plt.grid(True)
 plt.tight_layout()
-plt.show()
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+plt.savefig(f"suboptimality_dice_mdp_{timestamp}.png")
+# plt.show()

@@ -248,16 +248,6 @@ for n in range(n_runs):
 print("-" * 30)
 print("Training finished.")
 
-# Example: Show learned policy for a few steps and states
-print("\nExample Learned Policy (Probabilities):")
-for h in range(horizon):
-    print(f"\n--- Step h = {h} ---")
-    for s in range(num_states):
-        logits = policy_params[h][s]
-        probs = softmax(logits)
-        print(f"  State {s}: Probs Left={probs[0]:.3f}, Probs Right={probs[1]:.3f}")
-
-plt.figure(figsize=(10, 6))
 
 for lr, data in results_by_lr.items():
     episodes = data["episodes"]
