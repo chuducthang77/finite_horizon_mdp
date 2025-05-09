@@ -170,7 +170,6 @@ for lr in learning_rates:
         # A list where each element is the parameter table (logits) for that time step
         policy_params = [np.zeros((num_states, num_actions)) for _ in range(horizon)]
         suboptimality_history = []
-        total_rewards_history = []
 
         for episode in range(num_episodes):
             state = env.reset()
@@ -185,8 +184,6 @@ for lr in learning_rates:
                 total_reward += reward
                 if done:  # Terminate early if the environment ends
                     break
-
-            total_rewards_history.append(total_reward)
 
             # Calculate returns-to-go (G_h) for the episode
             returns_to_go = np.zeros(len(episode_data))
