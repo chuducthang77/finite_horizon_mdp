@@ -14,7 +14,7 @@ class ChainEnv:
         self.reset()
 
     def reset(self):
-        self.current_state = 0
+        self.current_state = np.random.randint(0, self.chain_length)
         self.current_step = 0
         self.done = False
         return self.current_state
@@ -141,8 +141,8 @@ chain_len = 4
 horizon = chain_len + 2  # Needs slightly more steps than chain len to reach end
 # learning_rates = [0.1, 0.5, 1., 2.]
 learning_rates = [2.]
-num_episodes = 100000
-n_runs = 30
+num_episodes = 100
+n_runs = 1
 
 # Initialization
 env = ChainEnv(chain_length=chain_len, horizon=horizon)
