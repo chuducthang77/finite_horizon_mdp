@@ -100,11 +100,6 @@ def calculate_optimal_value_start(env):
     return V
 
 
-# Example usage:
-env = ChainEnv(chain_length=5, horizon=10)
-V_star = calculate_optimal_value_start(env)
-print(V_star[0][0])  # V*(s=0, h=0)
-
 
 def calculate_value_start(env, policy_params=None):
     states = range(env.num_states)
@@ -147,7 +142,6 @@ horizon = chain_len + 2  # Needs slightly more steps than chain len to reach end
 # learning_rates = [0.1, 0.5, 1., 2.]
 learning_rates = [2.]
 num_episodes = 100000
-print_every = 200
 n_runs = 30
 
 # Initialization
@@ -213,8 +207,6 @@ for lr in learning_rates:
         all_runs_suboptimalities[run] = suboptimality_history
 
     averaged_suboptimality = np.mean(all_runs_suboptimalities, axis=0)
-    np.save('averaged_suboptimality.npy', averaged_suboptimality)
-    np.save('all_runs_suboptimalities.npy', all_runs_suboptimalities)
 
     std_suboptimality = np.std(all_runs_suboptimalities, axis=0)
     episodes = np.arange(1, num_episodes + 1)
