@@ -97,8 +97,8 @@ def calculate_optimal_value_start(env):
         # Terminal state stays at 0 value
         V[h][terminal_state] = 0.0
 
-    return V
-
+    V_mu  = sum(V[0][s] for s in range(env.chain_length)) / (env.chain_length)
+    return V, V_mu
 
 
 def calculate_value_start(env, policy_params=None):
@@ -132,8 +132,9 @@ def calculate_value_start(env, policy_params=None):
 
         # Terminal state's value is always 0
         V[h][terminal_state] = 0.0
-
-    return V
+    
+    V_mu  = sum(V[0][s] for s in range(env.chain_length)) / (env.chain_length)
+    return V, V_mu
 
 
 # Hyperparameters
@@ -149,8 +150,9 @@ env = ChainEnv(chain_length=chain_len, horizon=horizon)
 num_states = env.num_states
 num_actions = env.num_actions
 
-optimal_value = calculate_optimal_value_start(env)[0][0]
-print(f"Optimal Value V*(s=0, h=0) = {optimal_value}")
+optimal_value, optimal_value_over_init_state = calculate_optimal_value_start(env)
+print(f"Optimal Value V*(s=0, h=0) = {optimal_value[0][0]}")
+print(f'Optimal Value V*(mu, h=0) = {optimal_value_over_init_state}')
 print("-" * 30)
 
 results_by_lr = {}
@@ -158,12 +160,14 @@ results_by_lr = {}
 for lr in learning_rates:
     print(f"\n=== Averaging {n_runs} runs for LR={lr} ===")
     all_runs_suboptimalities = np.zeros((n_runs, num_episodes))
+    all_runs_suboptimalities_over_init_state = np.zeros((n_runs, num_episodes))
 
     for run in range(n_runs):
         # --- Policy Parameters ---
         # A list where each element is the parameter table (logits) for that time step
         policy_params = [np.zeros((num_states, num_actions)) for _ in range(horizon)]
         suboptimality_history = []
+        suboptimality_history_over_init_state = []
 
         for episode in range(num_episodes):
             state = env.reset()
@@ -200,20 +204,26 @@ for lr in learning_rates:
 
                 policy_params[h][s_h, :] += lr * G_h * grad_log_pi
 
-            result = calculate_value_start(env, policy_params)[0][0]
-            suboptimality = optimal_value - result
+            value_function, value_function_over_init_state = calculate_value_start(env, policy_params)
+            suboptimality = optimal_value[0][0] - value_function[0][0]
+            suboptimality_over_init_state = optimal_value_over_init_state - value_function_over_init_state
             suboptimality_history.append(suboptimality)
+            suboptimality_history_over_init_state.append(suboptimality_over_init_state)
 
         all_runs_suboptimalities[run] = suboptimality_history
+        all_runs_suboptimalities_over_init_state[run] = suboptimality_history_over_init_state
 
     averaged_suboptimality = np.mean(all_runs_suboptimalities, axis=0)
-
     std_suboptimality = np.std(all_runs_suboptimalities, axis=0)
+    averaged_suboptimality_over_init_state = np.mean(all_runs_suboptimalities_over_init_state, axis=0)
+    std_suboptimality_over_init_state = np.std(all_runs_suboptimalities_over_init_state, axis=0)
     episodes = np.arange(1, num_episodes + 1)
     # Save results
     results_by_lr[lr] = {
         "avg_suboptimality": averaged_suboptimality,
         "std_suboptimality": std_suboptimality,
+        "avg_suboptimality_over_init_state": averaged_suboptimality_over_init_state,
+        "std_suboptimality_over_init_state": std_suboptimality_over_init_state,
         "episodes": episodes,
         "all_runs_suboptimalities": all_runs_suboptimalities
     }
