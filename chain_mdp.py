@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
+import pickle
 
 
 # Chain MDP environment
@@ -143,7 +144,7 @@ horizon = chain_len  # Needs slightly more steps than chain len to reach end
 learning_rates = [0.1, 0.5, 1., 2., 0.00001]
 # learning_rates = [2.]
 num_episodes = 10000
-n_runs = 5
+n_runs = 2
 
 # Initialization
 env = ChainEnv(chain_length=chain_len, horizon=horizon)
@@ -155,15 +156,17 @@ print(f"Optimal Value V*(s=0, h=0) = {optimal_value[0][0]}")
 print(f'Optimal Value V*(mu, h=0) = {optimal_value_over_init_state}')
 print("-" * 30)
 
-results_by_lr = {}
+results_by_lr = {lr: {
+    "all_runs_suboptimalities": np.zeros((n_runs, num_episodes)),
+    "all_runs_suboptimalities_over_init_state": np.zeros((n_runs, num_episodes)),
+    "all_v_histories": []
+} for lr in learning_rates}
 
-for lr in learning_rates:
-    print(f"\n=== Averaging {n_runs} runs for LR={lr} ===")
-    all_runs_suboptimalities = np.zeros((n_runs, num_episodes))
-    all_runs_suboptimalities_over_init_state = np.zeros((n_runs, num_episodes))
-    all_v_histories = []
+for run in range(n_runs):
+    print(f"\n==== Run {run+1} ===")
 
-    for run in range(n_runs):
+    for lr in learning_rates:
+        print(f"Training with LR={lr}")
         # --- Policy Parameters ---
         # A list where each element is the parameter table (logits) for that time step
         policy_params = [np.zeros((num_states, num_actions)) for _ in range(horizon)]
@@ -217,41 +220,36 @@ for lr in learning_rates:
                     v_snapshot[h, s] = value_function[h][s]
             v_history.append(v_snapshot)
 
-        all_runs_suboptimalities[run] = suboptimality_history
-        all_runs_suboptimalities_over_init_state[run] = suboptimality_history_over_init_state
-        all_v_histories.append(np.array(v_history))
+        results_by_lr[lr]["all_runs_suboptimalities"][run] = suboptimality_history
+        results_by_lr[lr]["all_runs_suboptimalities_over_init_state"][run] = suboptimality_history_over_init_state
+        results_by_lr[lr]["all_v_histories"].append(np.array(v_history))
 
-    averaged_suboptimality = np.mean(all_runs_suboptimalities, axis=0)
-    std_suboptimality = np.std(all_runs_suboptimalities, axis=0)
-    averaged_suboptimality_over_init_state = np.mean(all_runs_suboptimalities_over_init_state, axis=0)
-    std_suboptimality_over_init_state = np.std(all_runs_suboptimalities_over_init_state, axis=0)
-    all_v_histories = np.array(all_v_histories)
-    averaged_v = np.mean(all_v_histories, axis=0)
-    std_v = np.std(all_v_histories, axis=0)
-    episodes = np.arange(1, num_episodes + 1)
-    # Save results
-    results_by_lr[lr] = {
-        "avg_suboptimality": averaged_suboptimality,
-        "std_suboptimality": std_suboptimality,
-        "avg_suboptimality_over_init_state": averaged_suboptimality_over_init_state,
-        "std_suboptimality_over_init_state": std_suboptimality_over_init_state,
-        "mean_v": averaged_v,
-        "std_v": std_v,
-        "episodes": episodes,
-        "all_runs_suboptimalities": all_runs_suboptimalities
-    }
+for lr in learning_rates:
+    all_runs_suboptimalities = results_by_lr[lr]["all_runs_suboptimalities"]
+    all_runs_suboptimalities_over_init_state = results_by_lr[lr]["all_runs_suboptimalities_over_init_state"]
+    all_v_histories = np.array(results_by_lr[lr]["all_v_histories"])
 
-    print(f"Finished training with learning rate {lr}.")
+    results_by_lr[lr]["avg_suboptimality"] = np.mean(all_runs_suboptimalities, axis=0)
+    results_by_lr[lr]["std_suboptimality"] = np.std(all_runs_suboptimalities, axis=0)
+    results_by_lr[lr]["avg_suboptimality_over_init_state"] = np.mean(all_runs_suboptimalities_over_init_state,
+                                                                     axis=0)
+    results_by_lr[lr]["std_suboptimality_over_init_state"] = np.std(all_runs_suboptimalities_over_init_state,
+                                                                    axis=0)
+    results_by_lr[lr]["mean_v"] = np.mean(all_v_histories, axis=0)
+    results_by_lr[lr]["std_v"] = np.std(all_v_histories, axis=0)
+    results_by_lr[lr]["episodes"] = np.arange(1, num_episodes + 1)
+
+np.save('training_results_chain_mdp.npy', results_by_lr)
 
 episodes = np.arange(1, num_episodes + 1)
 for n in range(n_runs):
     plt.figure(figsize=(10, 6))
     for lr, data in results_by_lr.items():
-        plt.plot(episodes, data["all_runs_suboptimalities"][n, :], label=f"LR={lr}", linewidth=1.5)
+        plt.plot(episodes, data["all_runs_suboptimalities"][n, :], label=f"$\\eta$={lr}", linewidth=1.5)
 
-    plt.xlabel("Episode")
-    plt.ylabel(r"Suboptimality: $V^*_{0}(s_0) - V_{\theta_T}(s_0)$")
-    plt.title(f"Suboptimality with run {n} with {lr} learning rate")
+    plt.xlabel("Episodes (t)")
+    plt.ylabel(f"Suboptimality $(V^*_0(\\rho) - V^{{\\pi_T}}_0(\\rho)$)")
+    plt.title(f"Suboptimality $(V^*_0(\\rho) - V^{{\\pi_T}}_0(\\rho)$) in the episode {n+1}")
     plt.grid(True)
     plt.yscale('log')
     plt.legend(title="Learning Rate")
@@ -264,18 +262,18 @@ print("-" * 30)
 print("Training finished.")
 
 plt.figure(figsize=(10,6))
-specific_lr = [0.1, 0.00001]
+specific_lr = [0.1, 0.00001, 0.5]
 for lr in specific_lr:
     episodes = results_by_lr[lr]["episodes"]
     mean_vals = results_by_lr[lr]["avg_suboptimality_over_init_state"]
     std_vals = results_by_lr[lr]["std_suboptimality_over_init_state"]
 
     plt.fill_between(episodes, mean_vals - std_vals, mean_vals + std_vals, alpha=0.2)
-    plt.plot(episodes, mean_vals, label=f"LR={lr}", linewidth=1.5)
+    plt.plot(episodes, mean_vals, label=f"$\\eta$={lr}", linewidth=1.5)
 
-plt.xlabel("Episodes")
-plt.ylabel("Average Suboptimality")
-plt.title(f"Average suboptimality ($V^*_0(\\mu) - V^{{\\pi_T}}_0(\\mu)$) over {n_runs} runs of 2 lr")
+plt.xlabel("Episodes (t) ")
+plt.ylabel(f"Average suboptimality ($V^*_0(\\rho) - V^{{\\pi_T}}_0(\\rho)$)")
+plt.title(f"Average suboptimality ($V^*_0(\\rho) - V^{{\\pi_T}}_0(\\rho)$) over {n_runs} runs with $\\eta =[0.1, 0.00001]$")
 plt.grid(True)
 plt.yscale('log')
 plt.minorticks_on()
@@ -295,9 +293,9 @@ for lr, data in results_by_lr.items():
     plt.fill_between(episodes, mean_vals - std_vals, mean_vals + std_vals, alpha=0.2)
     plt.plot(episodes, mean_vals, label=f"LR={lr}", linewidth=1.5)
 
-plt.xlabel("Episodes")
-plt.ylabel("Average Suboptimality")
-plt.title(f"Average suboptimality ($V^*_0(\\mu) - V^{{\\pi_T}}_0(\\mu)$) over {n_runs} runs")
+plt.xlabel("Episodes (t)")
+plt.ylabel(f"Average suboptimality ($V^*_0(\\rho) - V^{{\\pi_T}}_0(\\rho)$)")
+plt.title(f"Average suboptimality ($V^*_0(\\rho) - V^{{\\pi_T}}_0(\\rho)$) over {n_runs} runs")
 plt.grid(True)
 plt.yscale('log')
 plt.minorticks_on()
@@ -321,15 +319,15 @@ for idx, lr in enumerate(learning_rates[:4]):
 
     for h in range(horizon):
         ax.fill_between(episodes, mean_v_values[:, h, h] - std_v_values[:, h, h], mean_v_values[:, h, h] + std_v_values[:, h, h], alpha=0.2)
-        ax.plot(episodes, mean_v_values[:, h, h], label=f"$V_{{{h}}}(s={h})$")
+        ax.plot(episodes, mean_v_values[:, h, h], label=f"$V^{{\\pi_T}}_{{{h}}}({h})$")
 
-    ax.set_title(f"LR = {lr}")
-    ax.set_xlabel("Episode")
-    ax.set_ylabel("Value function")
+    ax.set_title(f"$\\eta$ = {lr}")
+    ax.set_xlabel("Episodes (t)")
+    ax.set_ylabel("Value function ($V^{\\pi_T}_h(s)$)")
     ax.grid(True)
     ax.legend(fontsize="small")
 
-plt.suptitle(f"Value Function Evolution Over First {fixed_episodes} Episodes", fontsize=14)
+plt.suptitle(f"Value function ($V^{{\\pi_T}}_h(s)$) evolution over first {fixed_episodes} episodes", fontsize=14)
 plt.tight_layout(rect=[0, 0, 1, 0.95])  # leave space for suptitle
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-plt.savefig(f"Value Function Evolution Over First {fixed_episodes} Episodes_{timestamp}.png")
+plt.savefig(f"value_function_evolution_over_first_{fixed_episodes}_episodes_{timestamp}.png")
