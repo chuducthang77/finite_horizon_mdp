@@ -141,7 +141,7 @@ def calculate_value_start(env, policy_params=None):
 # Hyperparameters
 chain_len = 4
 horizon = chain_len  # Needs slightly more steps than chain len to reach end
-learning_rates = [0.1, 0.5, 1., 2., 0.00001]
+learning_rates = [0.1, 0.5, 1., 2., 1e-3, 1e-5]
 # learning_rates = [2.]
 num_episodes = 10000
 n_runs = 2
@@ -159,7 +159,8 @@ print("-" * 30)
 results_by_lr = {lr: {
     "all_runs_suboptimalities": np.zeros((n_runs, num_episodes)),
     "all_runs_suboptimalities_over_init_state": np.zeros((n_runs, num_episodes)),
-    "all_v_histories": []
+    "all_v_histories": [],
+    "all_prob_action_1_histories": [],
 } for lr in learning_rates}
 
 for run in range(n_runs):
@@ -173,6 +174,7 @@ for run in range(n_runs):
         suboptimality_history = []
         suboptimality_history_over_init_state = []
         v_history = []
+        prob_action_1_history = []
 
         for episode in range(num_episodes):
             state = env.reset()
@@ -215,19 +217,26 @@ for run in range(n_runs):
             suboptimality_history.append(suboptimality)
             suboptimality_history_over_init_state.append(suboptimality_over_init_state)
             v_snapshot = np.zeros((horizon, num_states))
+            prob_action_1_snapshot = np.zeros((horizon, num_states))
             for h in range(horizon):
                 for s in range(num_states):
                     v_snapshot[h, s] = value_function[h][s]
+
+                    probs = softmax(policy_params[h][s, :])
+                    prob_action_1_snapshot[h, s] = probs[1]
             v_history.append(v_snapshot)
+            prob_action_1_history.append(prob_action_1_snapshot)
 
         results_by_lr[lr]["all_runs_suboptimalities"][run] = suboptimality_history
         results_by_lr[lr]["all_runs_suboptimalities_over_init_state"][run] = suboptimality_history_over_init_state
         results_by_lr[lr]["all_v_histories"].append(np.array(v_history))
+        results_by_lr[lr]["all_prob_action_1_histories"].append(np.array(prob_action_1_history))
 
 for lr in learning_rates:
     all_runs_suboptimalities = results_by_lr[lr]["all_runs_suboptimalities"]
     all_runs_suboptimalities_over_init_state = results_by_lr[lr]["all_runs_suboptimalities_over_init_state"]
     all_v_histories = np.array(results_by_lr[lr]["all_v_histories"])
+    all_prob_action_1_histories = np.array(results_by_lr[lr]["all_prob_action_1_histories"])
 
     results_by_lr[lr]["avg_suboptimality"] = np.mean(all_runs_suboptimalities, axis=0)
     results_by_lr[lr]["std_suboptimality"] = np.std(all_runs_suboptimalities, axis=0)
@@ -237,6 +246,8 @@ for lr in learning_rates:
                                                                     axis=0)
     results_by_lr[lr]["mean_v"] = np.mean(all_v_histories, axis=0)
     results_by_lr[lr]["std_v"] = np.std(all_v_histories, axis=0)
+    results_by_lr[lr]["mean_prob_action_1"] = np.mean(all_prob_action_1_histories, axis=0)
+    results_by_lr[lr]["std_prob_action_1"] = np.std(all_prob_action_1_histories, axis=0)
     results_by_lr[lr]["episodes"] = np.arange(1, num_episodes + 1)
 
 np.save('training_results_chain_mdp.npy', results_by_lr)
@@ -262,7 +273,7 @@ print("-" * 30)
 print("Training finished.")
 
 plt.figure(figsize=(10,6))
-specific_lr = [0.1, 0.00001, 0.5]
+specific_lr = [1e-5, 1e-3, 0.1, 0.5]
 for lr in specific_lr:
     episodes = results_by_lr[lr]["episodes"]
     mean_vals = results_by_lr[lr]["avg_suboptimality_over_init_state"]
@@ -331,3 +342,30 @@ plt.suptitle(f"Value function ($V^{{\\pi_T}}_h(s)$) evolution over first {fixed_
 plt.tight_layout(rect=[0, 0, 1, 0.95])  # leave space for suptitle
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 plt.savefig(f"value_function_evolution_over_first_{fixed_episodes}_episodes_{timestamp}.png")
+
+fixed_episodes = 5000
+fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+axes = axes.flatten()
+
+for idx, lr in enumerate(learning_rates[:4]):
+    ax = axes[idx]
+    mean_v_values = np.array(results_by_lr[lr]["mean_prob_action_1"])[:fixed_episodes]  # [episodes, horizon, states]
+    std_v_values = np.array(results_by_lr[lr]["std_prob_action_1"])[:fixed_episodes]
+    episodes = np.arange(fixed_episodes)
+
+    horizon = mean_v_values.shape[1]  # Assuming [episodes, horizon, states]
+
+    for h in range(horizon):
+        ax.fill_between(episodes, mean_v_values[:, h, h] - std_v_values[:, h, h], mean_v_values[:, h, h] + std_v_values[:, h, h], alpha=0.2)
+        ax.plot(episodes, mean_v_values[:, h, h], label=f"$\pi_T^{{{h}}}(a_1)$")
+
+    ax.set_title(f"$\\eta$ = {lr}")
+    ax.set_xlabel("Episodes (t)")
+    ax.set_ylabel("Optimal policy ($\pi_T^h(a_1)$)")
+    ax.grid(True)
+    ax.legend(fontsize="small")
+
+plt.suptitle(f"Optimal policy ($\pi_T^h(a_1)$) evolution over first {fixed_episodes} episodes", fontsize=14)
+plt.tight_layout(rect=[0, 0, 1, 0.95])  # leave space for suptitle
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+plt.savefig(f"optimal_policy_evolution_over_first_{fixed_episodes}_episodes_{timestamp}.png")
