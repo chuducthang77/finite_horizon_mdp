@@ -3,16 +3,66 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 import pickle
 
-results_by_lr = np.load('training_results_chain_mdp.npy',allow_pickle='TRUE').item()
+# results_by_lr = np.load('training_results_chain_mdp.npy',allow_pickle='TRUE').item()
 
 chain_len = 4
 horizon = chain_len  # Needs slightly more steps than chain len to reach end
-learning_rates = [0.1, 0.5, 1., 2., 0.00001]
+learning_rates = [0.1, 0.5, 1., 2., 0.001, 0.00001]
 # learning_rates = [2.]
-num_episodes = 10000
-n_runs = 2
+num_episodes = 100000
+n_runs = 30
+num_states = chain_len + 1
 
 episodes = np.arange(1, num_episodes + 1)
+results_by_lr = {lr: {
+    "all_runs_suboptimalities": np.zeros((n_runs, num_episodes)),
+    "all_runs_suboptimalities_over_init_state": np.zeros((n_runs, num_episodes)),
+    # "all_v_histories": [],
+    # "all_prob_action_1_histories": [],
+    "all_v_histories": np.zeros((n_runs, num_episodes, horizon, num_states)),
+    "all_prob_action_1_histories": np.zeros((n_runs, num_episodes, horizon, num_states)),
+} for lr in learning_rates}
+
+titles = ["all_runs_sub_lr_", "all_runs_sub_run_over_init_state_lr_", "all_v_histories_lr_", "all_prob_action_1_histories_lr_"]
+for title in titles:
+    for lr in learning_rates:
+        for n in range(n_runs):
+            # Load the results for each run
+            if lr == 1e-5:
+                with open(f"{title}1e-05_run_{n}.npy", "rb") as f:
+                    results = np.load(f)
+            else:
+                with open(f"{title}{lr}_run_{n}.npy", "rb") as f:
+                    results = np.load(f)
+            # Store the results in the dictionary
+            if title == "all_runs_sub_lr_":
+                results_by_lr[lr]["all_runs_suboptimalities"][n] = results
+            elif title == "all_runs_sub_run_over_init_state_lr_":
+                results_by_lr[lr]["all_runs_suboptimalities_over_init_state"][n] = results
+            elif title == "all_v_histories_lr_":
+                results_by_lr[lr]["all_v_histories"][n] = results
+            elif title == "all_prob_action_1_histories_lr_":
+                results_by_lr[lr]["all_prob_action_1_histories"][n] = results
+        print('lr: ', lr)
+
+for lr in learning_rates:
+    all_runs_suboptimalities = results_by_lr[lr]["all_runs_suboptimalities"]
+    all_runs_suboptimalities_over_init_state = results_by_lr[lr]["all_runs_suboptimalities_over_init_state"]
+    all_v_histories = np.array(results_by_lr[lr]["all_v_histories"])
+    all_prob_action_1_histories = np.array(results_by_lr[lr]["all_prob_action_1_histories"])
+
+    results_by_lr[lr]["avg_suboptimality"] = np.mean(all_runs_suboptimalities, axis=0)
+    results_by_lr[lr]["std_suboptimality"] = np.std(all_runs_suboptimalities, axis=0)
+    results_by_lr[lr]["avg_suboptimality_over_init_state"] = np.mean(all_runs_suboptimalities_over_init_state,
+                                                                     axis=0)
+    results_by_lr[lr]["std_suboptimality_over_init_state"] = np.std(all_runs_suboptimalities_over_init_state,
+                                                                    axis=0)
+    results_by_lr[lr]["mean_v"] = np.mean(all_v_histories, axis=0)
+    results_by_lr[lr]["std_v"] = np.std(all_v_histories, axis=0)
+    results_by_lr[lr]["mean_prob_action_1"] = np.mean(all_prob_action_1_histories, axis=0)
+    results_by_lr[lr]["std_prob_action_1"] = np.std(all_prob_action_1_histories, axis=0)
+    results_by_lr[lr]["episodes"] = np.arange(1, num_episodes + 1)
+
 for n in range(n_runs):
     plt.figure(figsize=(10, 6))
     for lr, data in results_by_lr.items():
@@ -28,9 +78,36 @@ for n in range(n_runs):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     plt.savefig(f"suboptimality_chain_mdp_run_{n}_{timestamp}.png")
     # plt.show()
+    plt.close()
 
 print("-" * 30)
 # print("Training finished.")
+
+for n in range(n_runs):
+    fixed_episodes = 5000
+    fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+    axes = axes.flatten()
+    for idx, lr in enumerate(learning_rates[:4]):
+        ax = axes[idx]
+        optimal_prob = np.array(results_by_lr[lr]["all_prob_action_1_histories"][n])[:fixed_episodes]  # [episodes, horizon, states]
+        episodes = np.arange(fixed_episodes)
+
+        horizon = optimal_prob.shape[1]  # Assuming [episodes, horizon, states]
+
+        for h in range(horizon):
+            ax.plot(episodes, optimal_prob[:, h, h], label=f"$\pi_T^{{{h}}}(a_1)$")
+
+        ax.set_title(f"$\\eta$ = {lr}")
+        ax.set_xlabel("Episodes (t)")
+        ax.set_ylabel("Optimal policy ($\pi_T^h(a_1)$)")
+        ax.grid(True)
+        ax.legend(fontsize="small")
+
+    plt.suptitle(f"Optimal policy ($\pi_T^h(a_1)$) evolution over first {fixed_episodes} episodes of run {n}", fontsize=14)
+    plt.tight_layout(rect=[0, 0, 1, 0.95])  # leave space for suptitle
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    plt.savefig(f"optimal_policy_evolution_over_first_{fixed_episodes}_episodes_{n}_run_{timestamp}.png")
+    plt.close(fig)
 
 plt.figure(figsize=(10,6))
 specific_lr = [1e-5, 1e-3, 0.1, 0.5]
@@ -51,9 +128,9 @@ plt.minorticks_on()
 plt.legend(title="Learning Rate")
 plt.tight_layout()
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-plt.savefig(f"suboptimality_chain_mdp_2_specific_lr_{timestamp}.png")
+plt.savefig(f"suboptimality_chain_mdp_specific_lr_{timestamp}.png")
 # plt.show()
-
+plt.close()
 
 plt.figure(figsize=(10,6))
 for lr, data in results_by_lr.items():
@@ -75,6 +152,7 @@ plt.tight_layout()
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 plt.savefig(f"suboptimality_chain_mdp_{timestamp}.png")
 # plt.show()
+plt.close()
 
 fixed_episodes = 1000
 fig, axes = plt.subplots(2, 2, figsize=(12, 8))
@@ -102,7 +180,7 @@ plt.suptitle(f"Value function ($V^{{\\pi_T}}_h(s)$) evolution over first {fixed_
 plt.tight_layout(rect=[0, 0, 1, 0.95])  # leave space for suptitle
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 plt.savefig(f"value_function_evolution_over_first_{fixed_episodes}_episodes_{timestamp}.png")
-
+plt.close(fig)
 
 fixed_episodes = 5000
 fig, axes = plt.subplots(2, 2, figsize=(12, 8))
@@ -130,3 +208,4 @@ plt.suptitle(f"Optimal policy ($\pi_T^h(a_1)$) evolution over first {fixed_episo
 plt.tight_layout(rect=[0, 0, 1, 0.95])  # leave space for suptitle
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 plt.savefig(f"optimal_policy_evolution_over_first_{fixed_episodes}_episodes_{timestamp}.png")
+plt.close(fig)
