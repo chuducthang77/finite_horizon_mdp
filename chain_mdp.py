@@ -37,7 +37,7 @@ class ChainEnv:
                 next_state = self.terminal_state
 
             # Reward 1 only if we reach the terminal state from the last state
-            reward = 1.0 if (self.current_state == self.chain_length - 1 and action == 1) else 0.0
+            reward = 7.0 if (self.current_state == self.chain_length - 1 and action == 1) else -0.5
 
         self.current_state = next_state
         self.current_step += 1
@@ -84,12 +84,12 @@ def calculate_optimal_value_start(env):
             # Action 1: Continue
             if s == chain_end:
                 # Reaching terminal from last state yields reward = 1.0
-                continue_reward = 1.0
+                continue_reward = 7.0
                 next_state = terminal_state
                 continue_value = continue_reward  # No future value after terminal
             else:
                 next_state = s + 1
-                continue_reward = 0.0
+                continue_reward = -0.5
                 continue_value = continue_reward + V[h + 1][next_state]
 
             # Take the max between terminating and continuing
@@ -123,10 +123,10 @@ def calculate_value_start(env, policy_params=None):
             # Action 1: continue
             if s == chain_end:
                 # last state before terminal: reward 1.0 and ends
-                value_continue = 1.0
+                value_continue = 7.0
             else:
                 next_state = s + 1
-                value_continue = 0.0 + V[h + 1][next_state]
+                value_continue = -0.5 + V[h + 1][next_state]
 
             # Bellman expectation over actions
             V[h][s] = probabilities[0] * value_terminate + probabilities[1] * value_continue
@@ -236,10 +236,10 @@ for run in range(n_runs):
         results_by_lr[lr]["all_v_histories"][run] = np.array(v_history)
         results_by_lr[lr]["all_prob_action_1_histories"][run] = np.array(prob_action_1_history)
 
-        np.save(f'all_runs_sub_lr_{lr}_run_{run}.npy', suboptimality_history)
-        np.save(f'all_runs_sub_run_over_init_state_lr_{lr}_run_{run}.npy', suboptimality_history_over_init_state)
-        np.save(f'all_v_histories_lr_{lr}_run_{run}.npy', np.array(v_history))
-        np.save(f'all_prob_action_1_histories_lr_{lr}_run_{run}.npy', np.array(prob_action_1_history))
+        np.save(f'./chain/all_runs_sub_lr_{lr}_run_{run}.npy', suboptimality_history)
+        np.save(f'./chain/all_runs_sub_run_over_init_state_lr_{lr}_run_{run}.npy', suboptimality_history_over_init_state)
+        np.save(f'./chain/all_v_histories_lr_{lr}_run_{run}.npy', np.array(v_history))
+        np.save(f'./chain/all_prob_action_1_histories_lr_{lr}_run_{run}.npy', np.array(prob_action_1_history))
 
 for lr in learning_rates:
     all_runs_suboptimalities = results_by_lr[lr]["all_runs_suboptimalities"]
@@ -259,7 +259,7 @@ for lr in learning_rates:
     results_by_lr[lr]["std_prob_action_1"] = np.std(all_prob_action_1_histories, axis=0)
     results_by_lr[lr]["episodes"] = np.arange(1, num_episodes + 1)
 
-np.save('training_results_chain_mdp.npy', results_by_lr)
+np.save('./chain/training_results_chain_mdp.npy', results_by_lr)
 
 episodes = np.arange(1, num_episodes + 1)
 # Average suboptimality for a specific run
@@ -276,8 +276,9 @@ for n in range(n_runs):
     plt.legend(title="Learning Rate")
     plt.tight_layout()
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    plt.savefig(f"suboptimality_chain_mdp_run_{n}_{timestamp}.png")
+    plt.savefig(f"./chain/suboptimality_chain_mdp_run_{n}_{timestamp}.png")
     # plt.show()
+    plt.close()
 
 print("-" * 30)
 print("Training finished.")
@@ -305,7 +306,8 @@ for n in range(n_runs):
     plt.suptitle(f"Optimal policy ($\pi_T^h(a_1)$) evolution over first {fixed_episodes} episodes of run {n}", fontsize=14)
     plt.tight_layout(rect=[0, 0, 1, 0.95])  # leave space for suptitle
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    plt.savefig(f"optimal_policy_evolution_over_first_{fixed_episodes}_episodes_{n}_run_{timestamp}.png")
+    plt.savefig(f"./chain/optimal_policy_evolution_over_first_{fixed_episodes}_episodes_{n}_run_{timestamp}.png")
+    plt.close()
 
 
 # Average suboptimality over all runs for specific learning rates
@@ -328,8 +330,9 @@ plt.minorticks_on()
 plt.legend(title="Learning Rate")
 plt.tight_layout()
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-plt.savefig(f"suboptimality_chain_mdp_specific_lr_{timestamp}.png")
+plt.savefig(f"./chain/suboptimality_chain_mdp_specific_lr_{timestamp}.png")
 # plt.show()
+plt.close()
 
 # Average suboptimality over all runs
 plt.figure(figsize=(10,6))
@@ -350,8 +353,9 @@ plt.minorticks_on()
 plt.legend(title="Learning Rate")
 plt.tight_layout()
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-plt.savefig(f"suboptimality_chain_mdp_{timestamp}.png")
+plt.savefig(f"./chain/suboptimality_chain_mdp_{timestamp}.png")
 # plt.show()
+plt.close()
 
 # Value function evolution over episodes
 fixed_episodes = 1000
@@ -379,7 +383,8 @@ for idx, lr in enumerate(learning_rates[:4]):
 plt.suptitle(f"Value function ($V^{{\\pi_T}}_h(s)$) evolution over first {fixed_episodes} episodes", fontsize=14)
 plt.tight_layout(rect=[0, 0, 1, 0.95])  # leave space for suptitle
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-plt.savefig(f"value_function_evolution_over_first_{fixed_episodes}_episodes_{timestamp}.png")
+plt.savefig(f"./chain/value_function_evolution_over_first_{fixed_episodes}_episodes_{timestamp}.png")
+plt.close()
 
 # Optimal policy evolution over episodes
 fixed_episodes = 5000
@@ -407,4 +412,5 @@ for idx, lr in enumerate(learning_rates[:4]):
 plt.suptitle(f"Optimal policy ($\pi_T^h(a_1)$) evolution over first {fixed_episodes} episodes", fontsize=14)
 plt.tight_layout(rect=[0, 0, 1, 0.95])  # leave space for suptitle
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-plt.savefig(f"optimal_policy_evolution_over_first_{fixed_episodes}_episodes_{timestamp}.png")
+plt.savefig(f"./chain/optimal_policy_evolution_over_first_{fixed_episodes}_episodes_{timestamp}.png")
+plt.close()

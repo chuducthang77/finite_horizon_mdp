@@ -10,7 +10,7 @@ horizon = chain_len  # Needs slightly more steps than chain len to reach end
 learning_rates = [0.1, 0.5, 1., 2., 0.001, 0.00001]
 # learning_rates = [2.]
 num_episodes = 100000
-n_runs = 30
+n_runs = 10
 num_states = chain_len + 1
 
 episodes = np.arange(1, num_episodes + 1)
@@ -29,10 +29,10 @@ for title in titles:
         for n in range(n_runs):
             # Load the results for each run
             if lr == 1e-5:
-                with open(f"{title}1e-05_run_{n}.npy", "rb") as f:
+                with open(f"./chain/{title}1e-05_run_{n}.npy", "rb") as f:
                     results = np.load(f)
             else:
-                with open(f"{title}{lr}_run_{n}.npy", "rb") as f:
+                with open(f"./chain/{title}{lr}_run_{n}.npy", "rb") as f:
                     results = np.load(f)
             # Store the results in the dictionary
             if title == "all_runs_sub_lr_":
