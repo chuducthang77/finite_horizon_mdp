@@ -10,7 +10,7 @@ horizon = chain_len  # Needs slightly more steps than chain len to reach end
 learning_rates = [0.1, 0.5, 1., 2., 0.001, 0.00001]
 # learning_rates = [2.]
 num_episodes = 100000
-n_runs = 10
+n_runs = 30
 num_states = chain_len + 1
 
 episodes = np.arange(1, num_episodes + 1)
@@ -76,7 +76,7 @@ for n in range(n_runs):
     plt.legend(title="Learning Rate")
     plt.tight_layout()
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    plt.savefig(f"suboptimality_chain_mdp_run_{n}_{timestamp}.png")
+    plt.savefig(f"./chain/suboptimality_chain_mdp_run_{n}_{timestamp}.png")
     # plt.show()
     plt.close()
 
@@ -85,7 +85,7 @@ print("-" * 30)
 
 for n in range(n_runs):
     fixed_episodes = 5000
-    fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+    fig, axes = plt.subplots(1, 4, figsize=(18, 5))
     axes = axes.flatten()
     for idx, lr in enumerate(learning_rates[:4]):
         ax = axes[idx]
@@ -106,11 +106,11 @@ for n in range(n_runs):
     plt.suptitle(f"Optimal policy ($\pi_T^h(a_1)$) evolution over first {fixed_episodes} episodes of run {n}", fontsize=14)
     plt.tight_layout(rect=[0, 0, 1, 0.95])  # leave space for suptitle
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    plt.savefig(f"optimal_policy_evolution_over_first_{fixed_episodes}_episodes_{n}_run_{timestamp}.png")
+    plt.savefig(f"./chain/optimal_policy_evolution_over_first_{fixed_episodes}_episodes_{n}_run_{timestamp}.png")
     plt.close(fig)
 
 plt.figure(figsize=(10,6))
-specific_lr = [1e-5, 1e-3, 0.1, 0.5]
+specific_lr = [1e-5, 1e-3, 0.1]
 for lr in specific_lr:
     episodes = results_by_lr[lr]["episodes"]
     mean_vals = results_by_lr[lr]["avg_suboptimality_over_init_state"]
@@ -121,14 +121,14 @@ for lr in specific_lr:
 
 plt.xlabel("Episodes (t) ")
 plt.ylabel(f"Average suboptimality ($V^*_0(\\rho) - V^{{\\pi_T}}_0(\\rho)$)")
-plt.title(f"Average suboptimality ($V^*_0(\\rho) - V^{{\\pi_T}}_0(\\rho)$) over {n_runs} runs with $\\eta =[0.1, 0.00001]$")
+plt.title(f"Average suboptimality ($V^*_0(\\rho) - V^{{\\pi_T}}_0(\\rho)$) over {n_runs} runs with $\\eta =[1e-5, 10e-3, 0.1]$")
 plt.grid(True)
 plt.yscale('log')
 plt.minorticks_on()
 plt.legend(title="Learning Rate")
 plt.tight_layout()
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-plt.savefig(f"suboptimality_chain_mdp_specific_lr_{timestamp}.png")
+plt.savefig(f"./chain/suboptimality_chain_mdp_specific_lr_{timestamp}.png")
 # plt.show()
 plt.close()
 
@@ -150,12 +150,12 @@ plt.minorticks_on()
 plt.legend(title="Learning Rate")
 plt.tight_layout()
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-plt.savefig(f"suboptimality_chain_mdp_{timestamp}.png")
+plt.savefig(f"./chain/suboptimality_chain_mdp_{timestamp}.png")
 # plt.show()
 plt.close()
 
 fixed_episodes = 1000
-fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+fig, axes = plt.subplots(1, 4, figsize=(18, 5))
 axes = axes.flatten()
 
 for idx, lr in enumerate(learning_rates[:4]):
@@ -179,11 +179,11 @@ for idx, lr in enumerate(learning_rates[:4]):
 plt.suptitle(f"Value function ($V^{{\\pi_T}}_h(s)$) evolution over first {fixed_episodes} episodes", fontsize=14)
 plt.tight_layout(rect=[0, 0, 1, 0.95])  # leave space for suptitle
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-plt.savefig(f"value_function_evolution_over_first_{fixed_episodes}_episodes_{timestamp}.png")
+plt.savefig(f"./chain/value_function_evolution_over_first_{fixed_episodes}_episodes_{timestamp}.png")
 plt.close(fig)
 
 fixed_episodes = 5000
-fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+fig, axes = plt.subplots(1, 4, figsize=(18, 5))
 axes = axes.flatten()
 
 for idx, lr in enumerate(learning_rates[:4]):
@@ -207,5 +207,5 @@ for idx, lr in enumerate(learning_rates[:4]):
 plt.suptitle(f"Optimal policy ($\pi_T^h(a_1)$) evolution over first {fixed_episodes} episodes", fontsize=14)
 plt.tight_layout(rect=[0, 0, 1, 0.95])  # leave space for suptitle
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-plt.savefig(f"optimal_policy_evolution_over_first_{fixed_episodes}_episodes_{timestamp}.png")
+plt.savefig(f"./chain/optimal_policy_evolution_over_first_{fixed_episodes}_episodes_{timestamp}.png")
 plt.close(fig)

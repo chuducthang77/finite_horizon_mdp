@@ -5,7 +5,7 @@ import pickle
 with open('./bandit/data.pkl', 'rb') as f:
     results = pickle.load(f)
 
-fig, axes = plt.subplots(1, 2, figsize=(16, 5))
+fig, axes = plt.subplots(1, 2, figsize=(10, 5))
 axes = axes.flatten()
 
 axes[0].plot(results[1]['pi1'][9, :], label=r"$\pi_{\theta_t}(a_1)$")
@@ -27,6 +27,6 @@ axes[1].grid(True)
 axes[1].set_title(r"$\eta=10$")
 axes[1].legend()
 
-plt.suptitle(r"Total probability of optimal actions $\sum_{a^*}\pi_{\theta_t}(a^*)$")
+plt.suptitle(r"Total probability of optimal actions $\sum_{a^*}\pi_{\theta_t}(a^*)$", fontsize=12, y=0.9)
 plt.tight_layout(rect=[0, 0, 1, 0.95])
 plt.savefig("./bandit/large_learning_rate_total_prob_astar_eta_.pdf", dpi=3000)

@@ -143,7 +143,7 @@ num_states = len(states)
 num_actions = 3
 horizon = 2
 learning_rates = [0.1, 0.5, 1., 2., 1e-3, 1e-5]
-num_episodes = 500000
+num_episodes = 100000
 n_runs = 10
 
 # Optimal value
@@ -235,7 +235,7 @@ for lr in learning_rates:
 
     results_by_lr[lr]["episodes"] = np.arange(1, num_episodes + 1)
 
-np.save('./tree/training_results_tree_mdp.npy', results_by_lr)
+# np.save('./tree/training_results_tree_mdp.npy', results_by_lr)
 
 episodes = np.arange(1, num_episodes + 1)
 # Total probability of optimal arms
@@ -248,6 +248,11 @@ for idx, lr in enumerate(learning_rates[:4]):
         prob_0[idx, n, :] = results_by_lr[lr]["all_prob_action_histories"][n, :, 0, 0, 0]
         prob_1[idx, n, :] = results_by_lr[lr]["all_prob_action_histories"][n, :, 0, 0, 1]
         total_prob[idx, n, :] = prob_0[idx, n, :] + prob_1[idx, n, :]
+
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+np.save(f'./tree/training_results_tree_mdp_probability_action_1_{timestamp}.npy', prob_0)
+np.save(f'./tree/training_results_tree_mdp_probability_action_2_{timestamp}.npy', prob_1)
+np.save(f'./tree/training_results_tree_mdp_total_probability_{timestamp}.npy', total_prob)
 
 average_prob_0 = np.mean(prob_0, axis=1)
 average_prob_1 = np.mean(prob_1, axis=1)
@@ -270,6 +275,20 @@ plt.suptitle(r"Total probability of optimal actions $\sum_{a^*}\pi_{\theta_t}(a^
 plt.tight_layout(rect=[0, 0, 1, 0.95])  # leave space for suptitle
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 plt.savefig(f"./tree/total_prob_astar_tree_mdp_over_{n_runs}_runs_{timestamp}.png")
+
+for n in range(n_runs):
+    plt.figure(figsize=(10, 6))
+    for idx, eta in enumerate(learning_rates[:4]):
+        plt.plot(prob_0[idx, n, :], label=r"$\pi_{\theta_t}(a_1|s_1)$")
+        plt.plot(prob_1[idx, n, :], label=r"$\pi_{\theta_t}(a_2|s_1)$")
+        plt.plot(total_prob[idx, n, :], label=r"$\pi_{\theta_t}(a_1|s_1) + \pi_{\theta_t}(a_2|s_1)$")
+        plt.ylabel('Probability of optimal arms')
+        plt.xlabel('Episodes (t)')
+        plt.grid(True)
+        plt.title(r"Total probability of optimal actions $\sum_{a^*}\pi_{\theta_t}(a^*)$")
+        plt.legend()
+        plt.savefig('./tree/large_learning_rate_total_prob_astar_eta_{eta:.2f}_run_{n}.pdf'.format(eta=eta, n=n), dpi=3000)
+        plt.close()
 
 # Average suboptimality for a specific run
 # for n in range(n_runs):

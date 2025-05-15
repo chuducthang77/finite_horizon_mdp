@@ -236,10 +236,10 @@ for run in range(n_runs):
         results_by_lr[lr]["all_v_histories"][run] = np.array(v_history)
         results_by_lr[lr]["all_prob_action_1_histories"][run] = np.array(prob_action_1_history)
 
-        np.save(f'./chain/all_runs_sub_lr_{lr}_run_{run}.npy', suboptimality_history)
-        np.save(f'./chain/all_runs_sub_run_over_init_state_lr_{lr}_run_{run}.npy', suboptimality_history_over_init_state)
-        np.save(f'./chain/all_v_histories_lr_{lr}_run_{run}.npy', np.array(v_history))
-        np.save(f'./chain/all_prob_action_1_histories_lr_{lr}_run_{run}.npy', np.array(prob_action_1_history))
+        np.save(f'./chain/all_runs_sub_lr_{lr}_run_{run+18}.npy', suboptimality_history)
+        np.save(f'./chain/all_runs_sub_run_over_init_state_lr_{lr}_run_{run+18}.npy', suboptimality_history_over_init_state)
+        np.save(f'./chain/all_v_histories_lr_{lr}_run_{run+18}.npy', np.array(v_history))
+        np.save(f'./chain/all_prob_action_1_histories_lr_{lr}_run_{run+18}.npy', np.array(prob_action_1_history))
 
 for lr in learning_rates:
     all_runs_suboptimalities = results_by_lr[lr]["all_runs_suboptimalities"]
