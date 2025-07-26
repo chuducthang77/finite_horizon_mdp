@@ -2,53 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
 from PIL import Image
-
-class TreeEnv:
-    def __init__(self):
-        self.reset()
-
-        # Define the deterministic transition structure as a dict:
-        # (current_state, action) -> (next_state, reward)
-        self.transitions = {
-            # Root state 0
-            (0, 0): (1, 1),    # Top branch
-            (0, 1): (2, 2),    # Middle branch
-            (0, 2): (3, 0.5),  # Bottom branch
-
-            # State 1 children
-            (1, 0): (4, 2),
-            (1, 1): (5, 0),
-            (1, 2): (6, 0),
-
-            # State 2 children
-            (2, 0): (7, 1),
-            (2, 1): (8, 0),
-            (2, 2): (9, 0),
-
-            # State 3 children
-            (3, 0): (10, 0.5),
-            (3, 1): (11, 0),
-            (3, 2): (12, 0),
-        }
-
-        self.terminal_states = set(range(4, 13))  # Leaf nodes
-
-    def reset(self):
-        self.current_state = 0
-        self.done = False
-        return self.current_state
-
-    def step(self, action):
-        if self.done:
-            raise Exception("Episode already finished.")
-        key = (self.current_state, action)
-        if key not in self.transitions:
-            raise ValueError(f"Invalid action {action} at state {self.current_state}")
-
-        next_state, reward = self.transitions[key]
-        self.current_state = next_state
-        self.done = next_state in self.terminal_states
-        return next_state, reward, self.done
+from env.tree_mdp import TreeMDP
 
 # 2. Softmax Policy (Non-Stationary)
 def softmax(logits):

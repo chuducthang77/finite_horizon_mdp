@@ -1,0 +1,12 @@
+env_name: TreeMDP
+horizon: 4
+learning_rates: [0.1 , 0.5, 1., 2., 0.00001, 0.001]
+num_episodes: 10000
+num_runs: 1
+is_save_ind_file: True
+is_save_whole_file: True
+is_show_plot: False
+is_multiple_optimal: True
+
+# Plot only
+plot_directory: 24-05-2025---15-26-43
