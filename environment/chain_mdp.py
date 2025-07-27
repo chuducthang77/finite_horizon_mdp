@@ -2,7 +2,7 @@ import numpy as np
 
 # Chain MDP environment
 class ChainEnv:
-    def __init__(self, chain_length=5, horizon=10, exit_reward=0.5, intermediate_reward = -0.5, final_reward = 7):
+    def __init__(self, chain_length=5, horizon=10, exit_reward=0.5, intermediate_reward = 0, final_reward = 1):
         self.chain_length = chain_length
         self.horizon = horizon
         self.num_states = chain_length + 1  # Last state is terminal

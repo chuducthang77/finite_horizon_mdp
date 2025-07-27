@@ -5,7 +5,7 @@ import pickle
 import os
 import yaml
 
-from env.chain_mdp import ChainEnv
+from environment.chain_mdp import ChainEnv
 from utils.softmax import softmax
 from utils.calculate_v_chain_mdp import calculate_value_function
 from utils.calculate_v_star_chain_mdp import calculate_optimal_value_function
@@ -43,7 +43,7 @@ def main(env, chain_len, horizon, learning_rates, num_episodes, num_runs, is_sho
     if initial_learning_rates > 0:
         learning_rates = learning_rates
     else:
-        learning_rates = np.linspace(-6, 1, num = 32)
+        learning_rates = np.linspace(-9, 1, num = 100)
         learning_rates = np.exp(learning_rates)
     num_episodes = num_episodes
     episodes = np.arange(1, num_episodes + 1)

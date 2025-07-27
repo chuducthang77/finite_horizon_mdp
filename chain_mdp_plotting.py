@@ -3,7 +3,7 @@ from datetime import datetime
 import os
 import yaml
 
-from env.chain_mdp import ChainEnv
+from environment.chain_mdp import ChainEnv
 from utils.softmax import softmax
 from utils.plot import *
 
@@ -16,7 +16,7 @@ def main(env, chain_len, horizon, learning_rates, num_episodes, num_runs, plot_d
     num_states = env_.num_states
     initial_learning_rates = len(learning_rates)
     if initial_learning_rates == 0:
-        learning_rates = np.linspace(-6, 1, num=32)
+        learning_rates = np.linspace(-9, 1, num=100)
         learning_rates = np.exp(learning_rates)
 
     results_by_lr = {lr: {
