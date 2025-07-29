@@ -3,7 +3,7 @@ from datetime import datetime
 import os
 import yaml
 
-from env.chain_mdp import ChainEnv
+from environment.chain_mdp import ChainEnv
 from utils.softmax import softmax
 from utils.plot import *
 
