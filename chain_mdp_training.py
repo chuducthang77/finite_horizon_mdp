@@ -25,11 +25,11 @@ def get_action(state, step_h, policy_params, num_actions):
     return action, probabilities
 
 
-def main(env, chain_len, horizon, learning_rates, num_episodes, num_runs, is_show_plot=False, is_save_plot=False, is_save_ind_file=True,
+def main(env, chain_len, horizon, learning_rates, num_episodes, num_runs, title="default", is_show_plot=False, is_save_plot=False, is_save_ind_file=True,
          is_save_whole_file=True):
     # Saving the result
     timestamp = datetime.now().strftime("%d-%m-%Y---%H-%M-%S")
-    dir_path = f"./exp/{env}/{timestamp}/"
+    dir_path = f"./exp/{env}/{title}/{timestamp}/"
     plot_path = dir_path + "plots/"
     model_path = dir_path + "models/"
     os.makedirs(dir_path, exist_ok=True)
@@ -160,6 +160,7 @@ if __name__ == "__main__":
         config = yaml.safe_load(f)
     parser = argparse.ArgumentParser()
     parser.add_argument('--lr',type=float,default=0.0)
+    parser.add_argument('--title', type=str, default='default')
     parsed_args = parser.parse_args()
 
     print(parsed_args.lr)
@@ -170,6 +171,6 @@ if __name__ == "__main__":
 
     main(env=config['env_name'], chain_len=config['chain_len'], horizon=config['horizon'],
          learning_rates=learning_rates,
-         num_episodes=config['num_episodes'], num_runs=config['num_runs'], is_show_plot=config['is_show_plot'],
+         num_episodes=config['num_episodes'], num_runs=config['num_runs'], title=parsed_args.title, is_show_plot=config['is_show_plot'],
          is_save_plot=config['is_save_plot'], is_save_ind_file=config['is_save_ind_file'],
          is_save_whole_file=config['is_save_whole_file'])
