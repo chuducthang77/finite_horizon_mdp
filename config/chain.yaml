@@ -1,6 +1,6 @@
 env_name: ChainMDP
-chain_len: 4
-horizon: 4
+chain_len: 5
+horizon: 5
 #learning_rates: [0.1 , 0.5, 1., 2., 0.00001, 0.001]
 learning_rates: []
 num_episodes: 100000

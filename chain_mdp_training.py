@@ -43,7 +43,7 @@ def main(env, chain_len, horizon, learning_rates, num_episodes, num_runs, is_sho
     if initial_learning_rates > 0:
         learning_rates = learning_rates
     else:
-        learning_rates = np.linspace(-9, 1, num = 100)
+        learning_rates = np.linspace(-9, 0, num = 50)
         learning_rates = np.exp(learning_rates)
     num_episodes = num_episodes
     episodes = np.arange(1, num_episodes + 1)
