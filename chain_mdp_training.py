@@ -4,8 +4,8 @@ from datetime import datetime
 import pickle
 import os
 import yaml
-
-from env.chain_mdp import ChainEnv
+import argparse
+from environment.chain_mdp import ChainEnv
 from utils.softmax import softmax
 from utils.calculate_v_chain_mdp import calculate_value_function
 from utils.calculate_v_star_chain_mdp import calculate_optimal_value_function
@@ -43,7 +43,7 @@ def main(env, chain_len, horizon, learning_rates, num_episodes, num_runs, is_sho
     if initial_learning_rates > 0:
         learning_rates = learning_rates
     else:
-        learning_rates = np.linspace(-6, 1, num = 32)
+        learning_rates = np.linspace(-9, 0, num = 50)
         learning_rates = np.exp(learning_rates)
     num_episodes = num_episodes
     episodes = np.arange(1, num_episodes + 1)
@@ -158,10 +158,18 @@ def main(env, chain_len, horizon, learning_rates, num_episodes, num_runs, is_sho
 if __name__ == "__main__":
     with open("./config/chain.yaml", "r") as f:
         config = yaml.safe_load(f)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--lr',type=float,default=0.0)
+    parsed_args = parser.parse_args()
 
+    print(parsed_args.lr)
+    if parsed_args.lr != 0.0:
+        learning_rates = [parsed_args.lr]
+    else:
+        learning_rates = list(config['learning_rates'])
 
     main(env=config['env_name'], chain_len=config['chain_len'], horizon=config['horizon'],
-         learning_rates=list(config['learning_rates']),
+         learning_rates=learning_rates,
          num_episodes=config['num_episodes'], num_runs=config['num_runs'], is_show_plot=config['is_show_plot'],
          is_save_plot=config['is_save_plot'], is_save_ind_file=config['is_save_ind_file'],
          is_save_whole_file=config['is_save_whole_file'])
