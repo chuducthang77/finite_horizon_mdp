@@ -4,16 +4,16 @@ import os
 import yaml
 import argparse
 
-from environment.chain_mdp import ChainEnv
+from environment.deep_sea_mdp import DeepSeaEnv
 from utils.softmax import softmax
 from utils.plot import *
 
 
-def main(env, chain_len, horizon, learning_rates, num_episodes, num_runs, dir_title, plot_directory, is_show_plot=False):
+def main(env, grid_size, horizon, learning_rates, num_episodes, num_runs, dir_title, plot_directory, is_show_plot=False):
     # Create the loader
-    plot_path = "./exp/" + env + "/" + dir_title +"/" + plot_directory + "/plots/"
+    plot_path = "./exp/" + env + "/" + dir_title + "/" + plot_directory + "/plots/"
     episodes = np.arange(1, num_episodes + 1)
-    env_ = ChainEnv(chain_length=chain_len, horizon=horizon)
+    env_ = DeepSeaEnv(grid_size=grid_size, horizon=horizon)
     num_states = env_.num_states
     initial_learning_rates = len(learning_rates)
     if initial_learning_rates == 0:
@@ -63,13 +63,13 @@ def main(env, chain_len, horizon, learning_rates, num_episodes, num_runs, dir_ti
 
 
 if __name__ == "__main__":
-    with open("./config/chain.yaml", "r") as f:
+    with open("./config/deep_sea.yaml", "r") as f:
         config = yaml.safe_load(f)
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--title', type=str, default='default')
     parsed_args = parser.parse_args()
 
-    main(env=config['env_name'], chain_len=config['chain_len'], horizon=config['horizon'],
+    main(env=config['env_name'], grid_size=config['grid_size'], horizon=config['horizon'],
          learning_rates=list(config['learning_rates']), num_episodes=config['num_episodes'], num_runs=config['num_runs'],
                              dir_title = parsed_args.title, plot_directory=config['plot_directory'], is_show_plot=config['is_show_plot'])

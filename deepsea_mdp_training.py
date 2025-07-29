@@ -5,27 +5,29 @@ import pickle
 import os
 import yaml
 import argparse
-from environment.chain_mdp import ChainEnv
+from environment.deep_sea_mdp import DeepSeaEnv
 from utils.softmax import softmax
-from utils.calculate_v_chain_mdp import calculate_value_function
-from utils.calculate_v_star_chain_mdp import calculate_optimal_value_function
+from utils.calculate_v_deep_sea_mdp import calculate_value_function
+from utils.calculate_v_star_deep_sea_mdp import calculate_optimal_value_function
 from utils.plot import *
 
 
-def get_action(state, step_h, policy_params, num_actions):
+def get_action(state, step_h, env, policy_params, num_actions):
     """Selects an action using the policy for the specific step h."""
     if step_h >= len(policy_params):
         # Handle case if trying to get action beyond horizon (shouldn't happen in normal loop)
         print(f"Warning: Step {step_h} is outside policy horizon {len(policy_params)}. Using last step policy.")
         step_h = len(policy_params) - 1
 
-    logits = policy_params[step_h][state]
+    state_idx = env._state_to_idx(state)
+
+    logits = policy_params[step_h][state_idx]
     probabilities = softmax(logits)
     action = np.random.choice(num_actions, p=probabilities)
     return action, probabilities
 
 
-def main(env, chain_len, horizon, learning_rates, num_episodes, num_runs, title="default", is_show_plot=False, is_save_plot=False, is_save_ind_file=True,
+def main(env, grid_size, horizon, learning_rates, num_episodes, num_runs, title="default", is_show_plot=False, is_save_plot=False, is_save_ind_file=True,
          is_save_whole_file=True):
     # Saving the result
     timestamp = datetime.now().strftime("%d-%m-%Y---%H-%M-%S")
@@ -37,8 +39,8 @@ def main(env, chain_len, horizon, learning_rates, num_episodes, num_runs, title=
     os.makedirs(model_path, exist_ok=True)
 
     # Hyperparameters
-    chain_len = chain_len
-    horizon = chain_len  # Needs slightly more steps than chain len to reach end
+    grid_size = grid_size
+    horizon = horizon  # Needs slightly more steps than chain len to reach end
     initial_learning_rates = len(learning_rates)
     if initial_learning_rates > 0:
         learning_rates = learning_rates
@@ -50,7 +52,7 @@ def main(env, chain_len, horizon, learning_rates, num_episodes, num_runs, title=
     num_runs = num_runs
 
     # Initialization
-    env = ChainEnv(chain_length=chain_len, horizon=horizon)
+    env = DeepSeaEnv(grid_size=grid_size, horizon=horizon)
     num_states = env.num_states
     num_actions = env.num_actions
 
@@ -62,7 +64,7 @@ def main(env, chain_len, horizon, learning_rates, num_episodes, num_runs, title=
 
     # Calculate the optimal value function of a given state or over initial distribution
     optimal_value, optimal_value_over_init_states = calculate_optimal_value_function(env)
-    print(f"Optimal Value V*(s=0, h=0) = {optimal_value[0][0]}")
+    print(f"Optimal Value V*(s=0, h=0) = {optimal_value[0].get((0, 0))}")
     print(f'Optimal Value V*(mu, h=0) = {optimal_value_over_init_states}')
     print("-" * 30)
 
@@ -85,7 +87,7 @@ def main(env, chain_len, horizon, learning_rates, num_episodes, num_runs, title=
                 total_reward = 0
 
                 for h in range(horizon):
-                    action, probs = get_action(state, h, policy_params, num_actions)
+                    action, probs = get_action(state, h, env, policy_params, num_actions)
                     next_state, reward, done = env.step(action)  # Updated: get 'done' flag
                     episode_data.append({"state": state, "action": action, "reward": reward, "probs": probs})
                     state = next_state
@@ -108,6 +110,8 @@ def main(env, chain_len, horizon, learning_rates, num_episodes, num_runs, title=
                     G_h = returns_to_go[h]
                     probs_h = step_data["probs"]
 
+                    s_h_idx = env._state_to_idx(s_h)
+
                     grad_log_pi = np.zeros(num_actions)
                     grad_log_pi[a_h] = 1.0
                     grad_log_pi -= probs_h
@@ -115,7 +119,7 @@ def main(env, chain_len, horizon, learning_rates, num_episodes, num_runs, title=
                     policy_params[h][s_h, :] += lr * G_h * grad_log_pi
 
                 value_function, value_function_over_init_state = calculate_value_function(env, policy_params)
-                suboptimality = optimal_value[0][0] - value_function[0][0]
+                suboptimality = optimal_value[0].get((0, 0)) - value_function[0].get((0, 0))
                 suboptimality_over_init_state = optimal_value_over_init_states - value_function_over_init_state
 
                 suboptimality_history.append(suboptimality)
@@ -156,19 +160,20 @@ def main(env, chain_len, horizon, learning_rates, num_episodes, num_runs, title=
 
 
 if __name__ == "__main__":
-    with open("./config/chain.yaml", "r") as f:
+    with open("./config/deep_sea.yaml", "r") as f:
         config = yaml.safe_load(f)
     parser = argparse.ArgumentParser()
     parser.add_argument('--lr',type=float,default=0.0)
     parser.add_argument('--title', type=str, default='default')
     parsed_args = parser.parse_args()
 
+    print(parsed_args.lr)
     if parsed_args.lr != 0.0:
         learning_rates = [parsed_args.lr]
     else:
         learning_rates = list(config['learning_rates'])
 
-    main(env=config['env_name'], chain_len=config['chain_len'], horizon=config['horizon'],
+    main(env=config['env_name'], grid_size=config['grid_size'], horizon=config['horizon'],
          learning_rates=learning_rates,
          num_episodes=config['num_episodes'], num_runs=config['num_runs'], title=parsed_args.title, is_show_plot=config['is_show_plot'],
          is_save_plot=config['is_save_plot'], is_save_ind_file=config['is_save_ind_file'],

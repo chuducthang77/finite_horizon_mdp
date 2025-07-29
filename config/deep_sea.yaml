@@ -1,0 +1,14 @@
+env_name: DeepSeaMDP
+grid_size: 5
+horizon: 5
+#learning_rates: [0.1 , 0.5, 1., 2., 0.00001, 0.001]
+learning_rates: []
+num_episodes: 100000
+num_runs: 30
+is_save_ind_file: True
+is_save_whole_file: True
+is_show_plot: False
+is_save_plot: False
+
+# Plot only
+plot_directory: 29-07-2025---15-46-13
