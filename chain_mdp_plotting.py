@@ -17,7 +17,7 @@ def main(env, chain_len, horizon, learning_rates, num_episodes, num_runs, dir_ti
     num_states = env_.num_states
     initial_learning_rates = len(learning_rates)
     if initial_learning_rates == 0:
-        learning_rates = np.linspace(-9, 0, num=50)
+        learning_rates = np.linspace(-9, 0, num=100)
         learning_rates = np.exp(learning_rates)
 
     results_by_lr = {lr: {
