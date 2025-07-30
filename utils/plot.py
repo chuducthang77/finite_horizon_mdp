@@ -49,20 +49,24 @@ def plot_average_subopt(num_runs, results_by_lr, learning_rate, title, plot_path
 def plot_average_supopt_last_iterate(num_runs, results_by_lr, learning_rates, episodes, title, plot_path, is_show_plot=False):
     plt.figure(figsize=(10, 6))
     average_subopt_last_iterate = []
+    std_subopt_last_iterate = []
     for lr in learning_rates:
         mean_vals = np.mean(results_by_lr[lr]["suboptimality_over_init_states_histories"][-1], axis=0)
+        std_vals = np.std(results_by_lr[lr]["suboptimality_over_init_states_histories"][-1], axis=0)
         average_subopt_last_iterate.append(mean_vals)
+        std_subopt_last_iterate.append(std_vals)
         # std_vals = np.std(results_by_lr[lr]["suboptimality_over_init_states_histories"], axis=0)
         #
         # plt.fill_between(episodes, mean_vals - std_vals, mean_vals + std_vals, alpha=0.2)
         # plt.plot(episodes, mean_vals, label=f"$\\eta$={lr}", linewidth=1.5)
 
-    plt.scatter(learning_rates, np.array(average_subopt_last_iterate))
+    plt.errorbar(learning_rates, np.array(average_subopt_last_iterate), yerr=np.array(std_subopt_last_iterate), linestyle='None', marker='o', capsize=5, label="Average Suboptimality")
     plt.xlabel(f"Learning rates ($\eta$) ")
     plt.ylabel(f"Average suboptimality ($V^*_0(\\rho) - V^{{\\pi_t}}_0(\\rho)$)")
     plt.title(
         f"Average suboptimality ($V^*_0(\\rho) - V^{{\\pi_t}}_0(\\rho)$) of {len(learning_rates)} learning rates")
     plt.grid(True)
+    plt.xscale('log')
     plt.yscale('log')
     plt.minorticks_on()
     # plt.legend(title="Learning Rate")

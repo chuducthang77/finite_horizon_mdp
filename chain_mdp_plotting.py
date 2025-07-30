@@ -7,7 +7,20 @@ import argparse
 from environment.chain_mdp import ChainEnv
 from utils.softmax import softmax
 from utils.plot import *
+import math
 
+
+def round_significant(number, significant_figures=6):
+    """
+    Rounds a float to a specific number of significant figures.
+    """
+    if number == 0:
+        return 0
+
+    # Use string formatting to round to the specified number of significant digits
+    # and then convert the resulting string back to a float.
+    format_string = f"{{:.{significant_figures}g}}"
+    return float(format_string.format(number))
 
 def main(env, chain_len, horizon, learning_rates, num_episodes, num_runs, dir_title, plot_directory, is_show_plot=False):
     # Create the loader
@@ -20,14 +33,36 @@ def main(env, chain_len, horizon, learning_rates, num_episodes, num_runs, dir_ti
         learning_rates = np.linspace(-9, 0, num=100)
         learning_rates = np.exp(learning_rates)
 
+    learning_rates = np.delete(learning_rates, 2)
+    temp_learning_rates = []
+    for lr in learning_rates:
+        temp_learning_rates.append(round_significant(lr))
+    learning_rates = np.array(temp_learning_rates)
+    # arr_og = []
+    # for lr in learning_rates:
+    #     arr_og.append(round_significant(lr))
+    #
+    # print(len(arr_og))
+    #
+    # print('===================================')
+    # arr = []
+    # for file in os.listdir("./exp/" + env + "/" + dir_title +"/" + plot_directory + "/models/"):
+    #     if file.startswith("subopt_lr_") and file.endswith(".npy"):
+    #         # Check if the file name contains a learning rate
+    #         if float(file.split('_lr_')[1].split('_run_')[0]) not in arr:
+    #             arr.append(float(file.split('_lr_')[1].split('_run_')[0]))
+    # print(len(sorted(arr)))
+    # exit()
+
     results_by_lr = {lr: {
-        "suboptimality_histories": np.zeros((num_runs, num_episodes)),
+        # "suboptimality_histories": np.zeros((num_runs, num_episodes)),
         "suboptimality_over_init_states_histories": np.zeros((num_runs, num_episodes)),
-        "probability_assigned_to_optimal_actions_histories": np.zeros((num_runs, num_episodes, horizon, num_states)),
+        # "probability_assigned_to_optimal_actions_histories": np.zeros((num_runs, num_episodes, horizon, num_states)),
     } for lr in learning_rates}
 
     # Load the result
-    titles = ["subopt_lr_", "subopt_over_init_state_lr_", "prob_to_opt_action_lr_"]
+    # titles = ["subopt_lr_", "subopt_over_init_state_lr_", "prob_to_opt_action_lr_"]
+    titles = ["subopt_over_init_state_lr_"]
     for title in titles:
         for lr in learning_rates:
             for n in range(num_runs):
@@ -39,12 +74,12 @@ def main(env, chain_len, horizon, learning_rates, num_episodes, num_runs, dir_ti
                     with open(f"./exp/{env}/{dir_title}/{plot_directory}/models/{title}{lr}_run_{n}.npy", "rb") as f:
                         results = np.load(f)
                 # Store the results in the dictionary
-                if title == "subopt_lr_":
-                    results_by_lr[lr]["suboptimality_histories"][n] = results
-                elif title == "subopt_over_init_state_lr_":
+                # if title == "subopt_lr_":
+                #     results_by_lr[lr]["suboptimality_histories"][n] = results
+                if title == "subopt_over_init_state_lr_":
                     results_by_lr[lr]["suboptimality_over_init_states_histories"][n] = results
-                elif title == "prob_to_opt_action_lr_":
-                    results_by_lr[lr]["probability_assigned_to_optimal_actions_histories"][n] = results
+                # elif title == "prob_to_opt_action_lr_":
+                #     results_by_lr[lr]["probability_assigned_to_optimal_actions_histories"][n] = results
             print('lr: ', lr)
 
     # Plot the result
