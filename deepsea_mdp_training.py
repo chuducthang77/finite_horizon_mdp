@@ -59,17 +59,13 @@ def main(env, grid_size, horizon, learning_rates, num_episodes, num_runs, title=
     } for lr in learning_rates}
 
     if is_save_subopt:
-        results_by_lr = {lr: {
-            "suboptimality_histories": np.zeros((num_runs, num_episodes))
-        } for lr in learning_rates}
+        for lr in learning_rates:
+            results_by_lr[lr]['suboptimality_histories'] = np.zeros((num_runs, num_episodes))
 
     if is_save_prob_optimal_action:
-        results_by_lr = {lr: {
-            "probability_assigned_to_optimal_actions_histories": np.zeros(
-                (num_runs, num_episodes, horizon, num_states)),
-        } for lr in learning_rates}
+        for lr in learning_rates:
+            results_by_lr[lr]['probability_assigned_to_optimal_actions_histories'] = np.zeros((num_runs, num_episodes, horizon, num_states))
 
-    print(results_by_lr)
     # Calculate the optimal value function of a given state or over initial distribution
     optimal_value, optimal_value_over_init_states = calculate_optimal_value_function(env)
     print(f"Optimal Value V*(s=0, h=0) = {optimal_value[0].get((0, 0))}")
@@ -160,11 +156,13 @@ def main(env, grid_size, horizon, learning_rates, num_episodes, num_runs, title=
                 results_by_lr[lr]["probability_assigned_to_optimal_actions_histories"][run] = np.array(
                     prob_action_1_history)
 
-            if is_save_ind_file:
-                np.save(f'{model_path}subopt_lr_{lr}_run_{run}.npy', suboptimality_history)
+            if is_save_ind_file and not is_test_run:
+                if is_save_subopt:
+                    np.save(f'{model_path}subopt_lr_{lr}_run_{run}.npy', suboptimality_history)
                 np.save(f'{model_path}subopt_over_init_state_lr_{lr}_run_{run}.npy',
                         suboptimality_history_over_init_state)
-                np.save(f'{model_path}prob_to_opt_action_lr_{lr}_run_{run}.npy', np.array(prob_action_1_history))
+                if is_save_prob_optimal_action:
+                    np.save(f'{model_path}prob_to_opt_action_lr_{lr}_run_{run}.npy', np.array(prob_action_1_history))
 
     print("-" * 30)
     print("Training finished.")
@@ -178,9 +176,12 @@ def main(env, grid_size, horizon, learning_rates, num_episodes, num_runs, title=
                             is_show_plot)
         plot_average_subopt(num_runs, results_by_lr, [1e-5, 1e-3, 0.1], "average_suboptimality_specific_lr", plot_path,
                             episodes, is_show_plot)
-        plot_supopt_each_run(num_runs, results_by_lr, plot_path, episodes, is_show_plot)
-        plot_opt_policy(results_by_lr, 1000, learning_rates[:4], plot_path, is_show_plot)
-        plot_opt_policy_each_run(num_runs, results_by_lr, 1000, learning_rates[:4], plot_path, is_show_plot)
+        if is_save_subopt:
+            plot_supopt_each_run(num_runs, results_by_lr, plot_path, episodes, is_show_plot)
+
+        if is_save_prob_optimal_action:
+            plot_opt_policy(results_by_lr, 1000, learning_rates[:4], plot_path, is_show_plot)
+            plot_opt_policy_each_run(num_runs, results_by_lr, 1000, learning_rates[:4], plot_path, is_show_plot)
 
 
 if __name__ == "__main__":

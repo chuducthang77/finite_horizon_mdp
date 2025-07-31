@@ -9,11 +9,11 @@ is_save_ind_file: True
 is_save_whole_file: False
 is_show_plot: False
 is_save_plot: False
-is_save_subopt_histories: True
+is_save_subopt_histories: False
 is_save_subopt_over_init_state_histories: True
-is_save_prob_optimal_action_histories: False
-is_save_subopt_over_init_state_last_iterate: False
-is_test_run: True
+is_save_prob_optimal_action_histories: True
+is_save_subopt_over_init_state_last_iterate: True
+is_test_run: False
 
 # Plot only
 plot_directory: 30-07-2025---21-16-53
