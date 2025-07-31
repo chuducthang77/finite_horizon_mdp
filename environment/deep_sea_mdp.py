@@ -60,7 +60,7 @@ class DeepSeaEnv:
         if self.state == self.treasure_state:
             reward = 1.0
             self.done = True
-        elif next_row >= self.grid_size or next_col >= self.grid_size or self.current_step >= self.horizon:
+        elif next_row >= self.grid_size - 1 or next_col >= self.grid_size - 1 or self.current_step >= self.horizon:
             self.done = True
 
         return self.state, reward, self.done

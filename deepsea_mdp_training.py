@@ -27,26 +27,24 @@ def get_action(state, step_h, env, policy_params, num_actions):
     return action, probabilities
 
 
-def main(env, grid_size, horizon, learning_rates, num_episodes, num_runs, title="default", is_show_plot=False, is_save_plot=False, is_save_ind_file=True,
-         is_save_whole_file=True):
+def main(env, grid_size, horizon, learning_rates, num_episodes, num_runs, title="default", is_show_plot=False,
+         is_save_plot=False, is_save_ind_file=True,
+         is_save_whole_file=True, is_save_subopt=True, is_save_subopt_over_init_state=True,
+         is_save_prob_optimal_action=True,
+         is_save_subopt_over_init_state_last_iterate=False, is_test_run=False):
     # Saving the result
     timestamp = datetime.now().strftime("%d-%m-%Y---%H-%M-%S")
     dir_path = f"./exp/{env}/{title}/{timestamp}/"
     plot_path = dir_path + "plots/"
     model_path = dir_path + "models/"
-    os.makedirs(dir_path, exist_ok=True)
-    os.makedirs(plot_path, exist_ok=True)
-    os.makedirs(model_path, exist_ok=True)
+    if not is_test_run:
+        os.makedirs(dir_path, exist_ok=True)
+        os.makedirs(plot_path, exist_ok=True)
+        os.makedirs(model_path, exist_ok=True)
 
     # Hyperparameters
     grid_size = grid_size
     horizon = horizon  # Needs slightly more steps than chain len to reach end
-    initial_learning_rates = len(learning_rates)
-    if initial_learning_rates > 0:
-        learning_rates = learning_rates
-    else:
-        learning_rates = np.linspace(-9, 0, num = 50)
-        learning_rates = np.exp(learning_rates)
     num_episodes = num_episodes
     episodes = np.arange(1, num_episodes + 1)
     num_runs = num_runs
@@ -57,11 +55,21 @@ def main(env, grid_size, horizon, learning_rates, num_episodes, num_runs, title=
     num_actions = env.num_actions
 
     results_by_lr = {lr: {
-        "suboptimality_histories": np.zeros((num_runs, num_episodes)),
         "suboptimality_over_init_states_histories": np.zeros((num_runs, num_episodes)),
-        "probability_assigned_to_optimal_actions_histories": np.zeros((num_runs, num_episodes, horizon, num_states)),
     } for lr in learning_rates}
 
+    if is_save_subopt:
+        results_by_lr = {lr: {
+            "suboptimality_histories": np.zeros((num_runs, num_episodes))
+        } for lr in learning_rates}
+
+    if is_save_prob_optimal_action:
+        results_by_lr = {lr: {
+            "probability_assigned_to_optimal_actions_histories": np.zeros(
+                (num_runs, num_episodes, horizon, num_states)),
+        } for lr in learning_rates}
+
+    print(results_by_lr)
     # Calculate the optimal value function of a given state or over initial distribution
     optimal_value, optimal_value_over_init_states = calculate_optimal_value_function(env)
     print(f"Optimal Value V*(s=0, h=0) = {optimal_value[0].get((0, 0))}")
@@ -71,16 +79,18 @@ def main(env, grid_size, horizon, learning_rates, num_episodes, num_runs, title=
     # Training loops
     for run in range(num_runs):
         print(f"\n==== Run {run + 1} ===")
+        print('grid size: ', grid_size)
 
         for lr in learning_rates:
             print(f"Training with LR={lr}")
             # --- Policy Parameters ---
             # A list where each element is the parameter table (logits) for that time step
             policy_params = [np.zeros((num_states, num_actions)) for _ in range(horizon)]
-            suboptimality_history = []
+            if is_save_subopt:
+                suboptimality_history = []
             suboptimality_history_over_init_state = []
-            prob_action_1_history = []
-
+            if is_save_prob_optimal_action:
+                prob_action_1_history = []
             for episode in range(num_episodes):
                 state = env.reset()
                 episode_data = []
@@ -116,25 +126,39 @@ def main(env, grid_size, horizon, learning_rates, num_episodes, num_runs, title=
                     grad_log_pi[a_h] = 1.0
                     grad_log_pi -= probs_h
 
-                    policy_params[h][s_h, :] += lr * G_h * grad_log_pi
+                    policy_params[h][s_h_idx, :] += lr * G_h * grad_log_pi
 
-                value_function, value_function_over_init_state = calculate_value_function(env, policy_params)
-                suboptimality = optimal_value[0].get((0, 0)) - value_function[0].get((0, 0))
-                suboptimality_over_init_state = optimal_value_over_init_states - value_function_over_init_state
+                if is_save_subopt_over_init_state_last_iterate:
+                    if episode == num_episodes - 1:
+                        value_function, value_function_over_init_state = calculate_value_function(env, policy_params)
+                        suboptimality = optimal_value[0].get((0, 0)) - value_function[0].get((0, 0))
+                        suboptimality_over_init_state = optimal_value_over_init_states - value_function_over_init_state
+                    else:
+                        suboptimality = 0
+                        suboptimality_over_init_state = 0
+                else:
+                    value_function, value_function_over_init_state = calculate_value_function(env, policy_params)
+                    suboptimality = optimal_value[0].get((0, 0)) - value_function[0].get((0, 0))
+                    suboptimality_over_init_state = optimal_value_over_init_states - value_function_over_init_state
 
-                suboptimality_history.append(suboptimality)
+                if is_save_subopt:
+                    suboptimality_history.append(suboptimality)
                 suboptimality_history_over_init_state.append(suboptimality_over_init_state)
-                prob_action_1_snapshot = np.zeros((horizon, num_states))
-                for h in range(horizon):
-                    for s in range(num_states):
-                        probs = softmax(policy_params[h][s, :])
-                        prob_action_1_snapshot[h, s] = probs[1]
-                prob_action_1_history.append(prob_action_1_snapshot)
+                if is_save_prob_optimal_action:
+                    prob_action_1_snapshot = np.zeros((horizon, num_states))
+                    for h in range(horizon):
+                        for s in range(num_states):
+                            probs = softmax(policy_params[h][s, :])
+                            prob_action_1_snapshot[h, s] = probs[1]
+                    prob_action_1_history.append(prob_action_1_snapshot)
 
-            results_by_lr[lr]["suboptimality_histories"][run] = np.array(suboptimality_history)
-            results_by_lr[lr]["suboptimality_over_init_states_histories"][run] = np.array(suboptimality_history_over_init_state)
-            results_by_lr[lr]["probability_assigned_to_optimal_actions_histories"][run] = np.array(
-                prob_action_1_history)
+            if is_save_subopt:
+                results_by_lr[lr]["suboptimality_histories"][run] = np.array(suboptimality_history)
+            results_by_lr[lr]["suboptimality_over_init_states_histories"][run] = np.array(
+                suboptimality_history_over_init_state)
+            if is_save_prob_optimal_action:
+                results_by_lr[lr]["probability_assigned_to_optimal_actions_histories"][run] = np.array(
+                    prob_action_1_history)
 
             if is_save_ind_file:
                 np.save(f'{model_path}subopt_lr_{lr}_run_{run}.npy', suboptimality_history)
@@ -149,7 +173,7 @@ def main(env, grid_size, horizon, learning_rates, num_episodes, num_runs, title=
     if is_save_whole_file:
         np.save(f'{model_path}training_results.npy', results_by_lr)
 
-    if is_save_plot and initial_learning_rates > 0:
+    if is_save_plot:
         plot_average_subopt(num_runs, results_by_lr, learning_rates, "average_suboptimality", plot_path, episodes,
                             is_show_plot)
         plot_average_subopt(num_runs, results_by_lr, [1e-5, 1e-3, 0.1], "average_suboptimality_specific_lr", plot_path,
@@ -163,18 +187,25 @@ if __name__ == "__main__":
     with open("./config/deep_sea.yaml", "r") as f:
         config = yaml.safe_load(f)
     parser = argparse.ArgumentParser()
-    parser.add_argument('--lr',type=float,default=0.0)
+    parser.add_argument('--lr', type=float, default=0.0)
     parser.add_argument('--title', type=str, default='default')
     parsed_args = parser.parse_args()
 
     print(parsed_args.lr)
     if parsed_args.lr != 0.0:
         learning_rates = [parsed_args.lr]
-    else:
+    elif parsed_args.lr == 0.0 and len(list(config['learning_rates'])) > 0:
         learning_rates = list(config['learning_rates'])
+    else:
+        learning_rates = np.exp(np.linspace(-9, 0, num=50))
 
     main(env=config['env_name'], grid_size=config['grid_size'], horizon=config['horizon'],
          learning_rates=learning_rates,
-         num_episodes=config['num_episodes'], num_runs=config['num_runs'], title=parsed_args.title, is_show_plot=config['is_show_plot'],
+         num_episodes=config['num_episodes'], num_runs=config['num_runs'], title=parsed_args.title,
+         is_show_plot=config['is_show_plot'],
          is_save_plot=config['is_save_plot'], is_save_ind_file=config['is_save_ind_file'],
-         is_save_whole_file=config['is_save_whole_file'])
+         is_save_whole_file=config['is_save_whole_file'], is_save_subopt=config['is_save_subopt_histories'],
+         is_save_subopt_over_init_state=config['is_save_subopt_over_init_state_histories'],
+         is_save_prob_optimal_action=config['is_save_prob_optimal_action_histories'],
+         is_save_subopt_over_init_state_last_iterate=config[
+             'is_save_subopt_over_init_state_last_iterate'], is_test_run=config['is_test_run'])

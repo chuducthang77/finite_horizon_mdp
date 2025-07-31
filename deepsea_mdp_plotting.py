@@ -30,12 +30,12 @@ def main(env, grid_size, horizon, learning_rates, num_episodes, num_runs, dir_ti
     if initial_learning_rates == 0:
         learning_rates = np.linspace(-9, 0, num=100)
         learning_rates = np.exp(learning_rates)
-    learning_rates = np.delete(learning_rates, 2)
+    # learning_rates = np.delete(learning_rates, 2)
     temp_learning_rates = []
     for lr in learning_rates:
         temp_learning_rates.append(round_significant(lr))
     learning_rates = np.array(temp_learning_rates)
-
+    learning_rates = [0.00000001, 0.1 , 0.5, 1., 2., 0.00001, 0.001, 5., 10., 50., 100.]
     results_by_lr = {lr: {
         # "suboptimality_histories": np.zeros((num_runs, num_episodes)),
         "suboptimality_over_init_states_histories": np.zeros((num_runs, num_episodes)),
@@ -51,6 +51,9 @@ def main(env, grid_size, horizon, learning_rates, num_episodes, num_runs, dir_ti
                 # Load the results for each run
                 if lr == 1e-5:
                     with open(f"./exp/{env}/{dir_title}/{plot_directory}/models/{title}1e-05_run_{n}.npy", "rb") as f:
+                        results = np.load(f)
+                elif lr == 1e-8:
+                    with open(f"./exp/{env}/{dir_title}/{plot_directory}/models/{title}1e-08_run_{n}.npy", "rb") as f:
                         results = np.load(f)
                 else:
                     with open(f"./exp/{env}/{dir_title}/{plot_directory}/models/{title}{lr}_run_{n}.npy", "rb") as f:
@@ -68,11 +71,11 @@ def main(env, grid_size, horizon, learning_rates, num_episodes, num_runs, dir_ti
     if initial_learning_rates > 0:
         plot_average_subopt(num_runs, results_by_lr, learning_rates, "average_suboptimality", plot_path, episodes,
                             is_show_plot)
-        plot_average_subopt(num_runs, results_by_lr, [1e-5, 1e-3, 0.1], "average_suboptimality_specific_lr", plot_path,
-                            episodes, is_show_plot)
-        plot_supopt_each_run(num_runs, results_by_lr, plot_path, episodes, is_show_plot)
-        plot_opt_policy(results_by_lr, 1000, learning_rates[:4], plot_path, is_show_plot)
-        plot_opt_policy_each_run(num_runs, results_by_lr, 1000, learning_rates[:4], plot_path, is_show_plot)
+        # plot_average_subopt(num_runs, results_by_lr, [1e-5, 1e-3, 0.1], "average_suboptimality_specific_lr", plot_path,
+                            # episodes, is_show_plot)
+        # plot_supopt_each_run(num_runs, results_by_lr, plot_path, episodes, is_show_plot)
+        # plot_opt_policy(results_by_lr, 1000, learning_rates[:4], plot_path, is_show_plot)
+        # plot_opt_policy_each_run(num_runs, results_by_lr, 1000, learning_rates[:4], plot_path, is_show_plot)
 
     else:
         plot_average_supopt_last_iterate(num_runs, results_by_lr, learning_rates, episodes, "average_suboptimality_last_iterate", plot_path, is_show_plot)
