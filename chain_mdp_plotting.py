@@ -36,7 +36,7 @@ def main(env, chain_len, horizon, learning_rates, num_episodes, num_runs, dir_ti
     # learning_rates = np.delete(learning_rates, 2)
     temp_learning_rates = []
     for lr in learning_rates:
-        temp_learning_rates.append(round_significant(lr))
+        temp_learning_rates.append(lr)
     learning_rates = np.array(temp_learning_rates)
 
     results_by_lr = {lr: {
@@ -84,15 +84,6 @@ def main(env, chain_len, horizon, learning_rates, num_episodes, num_runs, dir_ti
             print('lr: ', lr)
 
     # Plot the result
-    if initial_learning_rates > 0:
-        plot_average_subopt(num_runs, results_by_lr, learning_rates, "average_suboptimality", plot_path, episodes,
-                            is_show_plot)
-        plot_average_subopt(num_runs, results_by_lr, [1e-5, 1e-3, 0.1], "average_suboptimality_specific_lr", plot_path,
-                            episodes, is_show_plot)
-        plot_supopt_each_run(num_runs, results_by_lr, plot_path, episodes, is_show_plot)
-        plot_opt_policy(results_by_lr, 1000, learning_rates[:4], plot_path, is_show_plot)
-        plot_opt_policy_each_run(num_runs, results_by_lr, 1000, learning_rates[:4], plot_path, is_show_plot)
-
     if is_save_subopt:
         plot_supopt_each_run(num_runs, results_by_lr, plot_path, episodes, is_show_plot)
     if is_save_prob_optimal_action:
@@ -118,10 +109,10 @@ if __name__ == "__main__":
     if len(list(config['learning_rates'])) > 0:
         learning_rates = list(config['learning_rates'])
     else:
-        learning_rates = np.linspace(-9, 0, num=50)
+        learning_rates = np.exp(np.linspace(-9, 0, num=50))
 
     main(env=config['env_name'], chain_len=config['chain_len'], horizon=config['horizon'],
-         learning_rates=list(config['learning_rates']), num_episodes=config['num_episodes'],
+         learning_rates=learning_rates, num_episodes=config['num_episodes'],
          num_runs=config['num_runs'],
          dir_title=parsed_args.title, plot_directory=config['plot_directory'], is_show_plot=config['is_show_plot'],
          is_save_subopt=config['is_save_subopt_histories'],
