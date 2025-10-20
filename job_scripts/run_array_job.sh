@@ -1,15 +1,17 @@
 #!/bin/bash
 #SBATCH --account=def-szepesva       # Replace with your allocation
-#SBATCH --job-name=my_array_job
 #SBATCH --time=00:05:00                 # hh:mm:ss
-#SBATCH --mem=16G
-#SBATCH --cpus-per-task=6
+#SBATCH --mem=32G
+#SBATCH --cpus-per-task=4
 #SBATCH --array=0-49                     # 10 jobs, indices 0 through 9
 #SBATCH --output=logs/%x_%A_%a.out      # %A=job ID, %a=array index
 #SBATCH --error=logs/%x_%A_%a.err
+#SBATCH --mail-user=thang@ualberta.ca
+#SBATCH --mail-type=ALL
 
 # Optional: load modules
-module load python/3.11
+module load python/3.11 scipy-stack
+source ~/venv/bin/activate
 
 # Create output dir if not exist
 mkdir -p ../logs
