@@ -24,7 +24,7 @@ def round_significant(number, significant_figures=6):
 
 
 def main(env, chain_len, horizon, learning_rates, num_episodes, num_runs, dir_title, plot_directory,
-         is_show_plot=False, is_save_subopt_over_init_state=True, is_save_prob_optimal_action=False,
+         is_show_plot=False, is_save_subopt=False, is_save_subopt_over_init_state=True, is_save_prob_optimal_action=False,
          is_save_subopt_over_init_state_last_iterate=False):
     # Create the loader
     plot_path = "./exp/" + env + "/" + dir_title + "/" + plot_directory + "/plots/"
