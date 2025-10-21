@@ -2,18 +2,18 @@ env_name: DeepSeaMDP
 grid_size: 5
 horizon: 5
 #learning_rates: [0.1 , 0.5, 1., 2., 0.00001, 0.001]
-learning_rates: [0.1, 0.5]
-num_episodes: 1000
-num_runs: 5
+learning_rates: []
+num_episodes: 100000
+num_runs: 30
 is_save_ind_file: True
 is_save_whole_file: False
 is_show_plot: False
 is_save_plot: False
 is_save_subopt_histories: False
-is_save_subopt_over_init_state_histories: True
+is_save_subopt_over_init_state_histories: False
 is_save_prob_optimal_action_histories: False
 is_save_subopt_over_init_state_last_iterate: True
-is_test_run: True
+is_test_run: False
 
 # Plot only
-plot_directory: 31-07-2025---15-12-53
+plot_directory: 20-10-2025---22-55-11

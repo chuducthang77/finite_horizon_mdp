@@ -35,7 +35,7 @@ def main(env, grid_size, horizon, learning_rates, num_episodes, num_runs, dir_ti
     # learning_rates = np.delete(learning_rates, 2)
     temp_learning_rates = []
     for lr in learning_rates:
-        temp_learning_rates.append(round_significant(lr))
+        temp_learning_rates.append(lr)
     learning_rates = np.array(temp_learning_rates)
 
     results_by_lr = {lr: {
